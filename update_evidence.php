@@ -12,7 +12,7 @@ if(isset($_GET['logout'])){
 require_once "config.php";
 
 // Define variables and initialize with empty values
-$name     = $description     = $status     = $type      = $project_id       = "";
+$name     = $description     = $status     = "";
 $name_err = $description_err = "";
 
 // Processing form data when form is submitted
@@ -52,8 +52,6 @@ if(isset($_POST["id"]) && !empty($_POST["id"]))
    }
 
     $status = trim($_POST["status"]);
-
-    $type = trim($_POST["type"]);
     
     $project_id = trim($_POST["project_id"]);
 
@@ -68,7 +66,7 @@ if(isset($_POST["id"]) && !empty($_POST["id"]))
         if($stmt = mysqli_prepare($connection, $sql))
         {
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ississi", $project_id, $name, $description, $status, $log_date, $log_login, $param_id);
+            mysqli_stmt_bind_param($stmt, "ssssssi", $project_id, $name, $description, $status, $log_date, $log_login, $param_id);
             
             // Set parameters
             $project_id = $project_id;
@@ -76,16 +74,13 @@ if(isset($_POST["id"]) && !empty($_POST["id"]))
             $description   = $description;
             $status        = $status;
             $log_date   = $log_date;
-            $log_login     = $_SESSION['login'];
+            $log_login     =$_SESSION['login'];
             $param_id = $id;
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt))
             {
                 // Projects updated successfully. Redirect to landing page
-                if(isset($_GET['project_id']))
-                    header("location: evidences.php?project_id=" . $project_id);
-                else
-                    header("location: evidences.php");
+                header("location: evidences.php");
                 exit();
             }
             else
@@ -155,6 +150,8 @@ else
         // Close statement
         mysqli_stmt_close($stmt);
         
+        // Close connection
+        mysqli_close($connection);
     }
     else
     {
@@ -195,24 +192,29 @@ else
                     <ul class="dropdown-menu" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
                         <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                        <li><a class="dropdown-item" href="#"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Update Evidence <?= $_GET['id'] . " from Project " . $_GET['project_id'];?>
-                    
+                    Update Evidence
                 </h3>
                 <hr class="bg-dark">
                 <p>Please fill this form and submit to update the evidence on the database.</p>
-                <?php
-                    if(isset($_GET['project_id']))
-                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "?project_id=" . $project_id . "' method='post'>";
-                    else
-                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "' method='post'>";
-                ?>
+                    <form action="<?= htmlspecialchars(basename($_SERVER['REQUEST_URI'])); ?>" method="post">
+                    <div class="form-group">
+                        <label>Project</label>
+                            <select id="project_id" name="project_id" class="form-control" value="<?= $project_id; ?>">
+                            <?php
+                                $query = "SELECT * FROM projects";
+                                $result = mysqli_query($connection, $query);
+                                while ($row = mysqli_fetch_array($result)):;?>
+                                <option value="<?= $row[0] ?>"><?= $row[0] ;?></option>
+                            <?php endwhile;?>
+                        </select>
+                        </div>
                         <div class="form-group <?= (!empty($name_err)) ? 'has-error' : ''; ?>">
                             <label>Name</label>
                             <input type="text" name="name" class="form-control" value="<?= $name; ?>">
@@ -224,33 +226,17 @@ else
                             <span class="help-block"><?= $description_err;?></span>
                         </div>
                         <div class="form-group">
-                            <label>Type</label>
-                            <select id="type" name="type" class="form-control" value="<?= $type; ?>">
-                                <option value="1">Safety Management Plan</option>
-                                <option value="2">Development Plan</option>
-                                <option value="3">Configuration Management Plan</option>
-                                <option value="4">V&V Plan</option>
-                                <option value="5">System Testing Results</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label>Status</label>
                             <select id="status" name="status" class="form-control" value="<?= $status; ?>">
-                                <option value="1">Pending analysis</option>
-                                <option value="2">Cancelled</option>
-                                <option value="3">Validated</option>
+                                <option value="Pending analysis">Pending analysis</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="Validated">Validated</option>
                             </select>
                         </div>
                         <input type="hidden" name="id" value="<?= $id; ?>"/>
-                        <input type="hidden" name="project_id" value="<?= $project_id; ?>"/>
                         <br>
                         <input type="submit" class="btn btn-success" value="Submit">
-                        <?php
-                        if(isset($_GET['project_id']))
-                            echo "<a href='evidences.php?project_id=" . $_GET['project_id'] . "' class='btn btn-danger'>Cancel</a>";
-                        else
-                            echo "<a href='evidences.php' class='btn btn-danger'>Cancel</a>";
-                        ?>
+                        <a href="evidences.php" class="btn btn-danger">Cancel</a>
                     </form>
             </div>
         </div>

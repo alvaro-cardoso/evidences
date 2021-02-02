@@ -43,7 +43,7 @@ if(isset($_GET['logout'])){
                     <ul class="dropdown-menu" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
                         <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                        <li><a class="dropdown-item" href="#"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
                     </ul>
                 </div>
             </div>
@@ -63,7 +63,6 @@ if(isset($_GET['logout'])){
                     <?php
                     if($result = mysqli_query($connection, $sql))
                     {
-                        $numTotal   = mysqli_num_rows($result);
                         if(mysqli_num_rows($result) > 0)
                         {
                     ?>
@@ -85,18 +84,18 @@ if(isset($_GET['logout'])){
                                         {
                                         ?>
                                         <tr>
-                                            <td class="text-center"><span class="material-icons" data-bs-toggle="tooltip" data-bs-placement="bottom" title=<?= $row['description'] ;?>>info</span></td>
+                                            <td class="text-center"><span class="material-icons" data-bs-toggle="tooltip" data-bs-placement="right" title=<?= $row['description'] ;?>>info</span></td>
                                             <td><?= $row['id'] ;?></td>
                                             <td><?= $row['title'] ;?></td>
                                             <td><?php switch($row['status']){
-                                                    case 1:
-                                                        echo "<span class='badge bg-warning'>In progress</span>";
+                                                    case "In progress":
+                                                        echo "<span class='badge bg-warning'>".$row['status']."</span>";
                                                         break;
-                                                    case 2:
-                                                        echo "<span class='badge bg-success'>In validation</span>";
+                                                    case "In validation":
+                                                        echo "<span class='badge bg-success'>".$row['status']."</span>";
                                                         break;
-                                                    case 3:
-                                                        echo "<span class='badge bg-danger'>Closed</span>";
+                                                    case "Closed":
+                                                        echo "<span class='badge bg-danger'>".$row['status']."</span>";
                                                         break;
                                                 }
                                                 ?>
@@ -105,7 +104,6 @@ if(isset($_GET['logout'])){
                                             <td><?= $row['log_login'] ;?></td>
                                             <td>
                                                 <?php
-                                                echo "<a href='evidences.php?project_id=". $row['id'] ."' title='View Evidences' data-toggle='tooltip'> <span class='material-icons text-secundary' aria-hidden='true''>visibility</span></a>";
                                                 echo "<a href='update_project.php?id=". $row['id'] ."' title='Update Project' data-toggle='tooltip'> <span class='material-icons' aria-hidden='true' style='color:#3ca23c;'>create</span></a>";
                                                 echo "<a href='delete_project.php?id=". $row['id'] ."' title='Delete Project' data-toggle='tooltip'> <span class='material-icons' aria-hidden='true' style='color:crimson;'>delete_sweep</span></a>";
                                                 ?>
@@ -117,6 +115,9 @@ if(isset($_GET['logout'])){
                                 </tbody>                          
                             </table>
                         <?php
+                            $sqlTotal   = "SELECT id FROM projects";//Para saber o total
+                            $qrTotal    = mysqli_query($connection,$sqlTotal);//Executa o SQL
+                            $numTotal   = mysqli_num_rows($qrTotal);//Total de Registro na tabela 
                             $totalPage = ceil($numTotal/10);//O calculo do Total de página ser exibido
                             $exibir = 3;
                             $prev  = (($page - 1) == 0) ? 1 : $page - 1;
