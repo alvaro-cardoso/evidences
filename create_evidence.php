@@ -13,8 +13,8 @@ if(isset($_GET['logout'])){
 require_once "config.php";
  
 // Define variables and initialize with empty values
-$project_id     = $name     = $description     = $status     = "";
-$name_err = $description_err = "";
+$project_id     = $name     = $description     = $status     = $type    = "";
+$name_err       = $description_err      = "";
  
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST")
@@ -49,9 +49,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST")
         $description = $input_description;
     }
 
+    $type = trim($_POST["type"]);
+
     $status = trim($_POST["status"]);
     
-    $project_id = trim($_POST["project_id"]);
+    if(isset($_GET['project_id']))
+        $project_id = trim($_GET["project_id"]);
+    else   
+        $project_id = trim($_POST["project_id"]);
 
     $log_date = date("Y-m-d H:i:s");
     
@@ -59,17 +64,18 @@ if($_SERVER["REQUEST_METHOD"] == "POST")
     if(empty($name_err) && empty($description_err))
     {
         // Prepare an insert statement
-        $sql = "INSERT INTO evidences (project_id, name, description, status, log_date, log_login) VALUES (?,?,?,?,?,?)";
+        $sql = "INSERT INTO evidences (project_id, name, description, type, status, log_date, log_login) VALUES (?,?,?,?,?,?,?)";
          
         if($stmt = mysqli_prepare($connection, $sql))
         {
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ssssss", $project_id, $name, $description, $status, $log_date, $log_login);
+            mysqli_stmt_bind_param($stmt, "issiiss", $project_id, $name, $description, $type, $status, $log_date, $log_login);
             
             // Set parameters
             $project_id = $project_id;
             $name         = $name;
             $description   = $description;
+            $type           = $type;
             $status        = $status;
             $log_date      = $log_date;
             $log_login         = $_SESSION['login'];
@@ -77,7 +83,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST")
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
                 // Evidences created successfully. Redirect to landing pstatus
-                header("location: evidences.php");
+                if(isset($_GET['project_id']))
+                    header("location: evidences.php?project_id=" .$project_id);
+                else
+                    header("location: evidences.php");
                 exit();
             }
             else
@@ -126,27 +135,43 @@ if($_SERVER["REQUEST_METHOD"] == "POST")
                     <ul class="dropdown-menu" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
                         <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="#"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Register Evidence
+                <?php
+                    if(isset($_GET['project_id'])){
+                        $project_id = ($_GET['project_id']);
+                        echo "Register Evidence for Project " . $project_id;
+                    }
+                    else
+                        echo "Register Evidence";
+                ?>
                 </h3>
                 <hr class="bg-dark">
-                <form action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                <?php
+                    if(isset($_GET['project_id']))
+                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "?project_id=" . $project_id . "' method='post'>";
+                    else
+                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "' method='post'>";
+                ?>
                     <div class="form-group">
-                        <label>Project</label>
-                        <select id="project_id" name="project_id" class="form-control" value="<?= $project_id; ?>">
                         <?php
-                            $query = "SELECT * FROM projects";
-                            $result = mysqli_query($connection, $query);
-                            while ($row = mysqli_fetch_array($result)):;?>
-                                <option value="<?= $row[0] ?>"><?= $row[0] ;?></option>
-                            <?php endwhile;?>
-                        </select>
+                            if(!isset($_GET['project_id'])){
+                                echo "<label>Project</label><select id='project_id' name='project_id' class='form-control' value='<?= $project_id; ?>'>";
+                                $query = "SELECT * FROM projects";
+                                $result = mysqli_query($connection, $query);
+                                while ($row = mysqli_fetch_array($result)):
+                                    echo "<option value='" . $row[0] . "'>" . $row[0] . "</option>";
+                                endwhile;
+                                echo "</select>";
+                            }
+                            // Close connection
+                            mysqli_close($connection);
+                        ?>
                     </div>
                     <div class="form-group <?= (!empty($name_err)) ? 'has-error' : ''; ?>">
                         <label>Name</label>
@@ -159,21 +184,35 @@ if($_SERVER["REQUEST_METHOD"] == "POST")
                         <span class="help-block"><?= $description_err;?></span>
                     </div>
                     <div class="form-group">
-                        <label>Status</label>
-                            <select id="status" name="status" class="form-control" value="<?= $status; ?>">
-                            <option value="Pending analysis">Pending analisys</option>
-                            <option value="Cancelled">Cancelled</option>
-                            <option value="Validated">Validated</option>
+                        <label>Type</label>
+                            <select id="type" name="type" class="form-control" value="<?= $type; ?>">
+                                <option value="1">Safety Management Plan</option>
+                                <option value="2">Development Plan</option>
+                                <option value="3">Configuration Management Plan</option>
+                                <option value="4">V&V Plan</option>
+                                <option value="5">System Testing Results</option>
                             </select>
                     </div>
-                    <br>
+                    <div class="form-group">
+                        <label>Status</label>
+                            <select id="status" name="status" class="form-control" value="<?= $status; ?>">
+                                <option value="1">Pending analisys</option>
+                                <option value="2">Cancelled</option>
+                                <option value="3">Validated</option>
+                            </select>
+                    </div>
                     <div class="form-group">
                         <label>Upload evidence file</label>
                         <input class="form-control" type="file" id="formFileMultiple">
                     </div>
                     <br>
                     <input type="submit" class="btn btn-success" value="Submit">
-                    <a href="evidences.php" class="btn btn-default" style="color:crimson">Cancel</a>
+                    <?php
+                        if(isset($_GET['project_id']))
+                            echo "<a href='evidences.php?project_id=" . $project_id . "' class='btn btn-default' style='color:crimson'>Cancel</a>";
+                        else
+                            echo "<a href='evidences.php' class='btn btn-default' style='color:crimson'>Cancel</a>";
+                    ?>
                 </form>
             </div>
         </div>

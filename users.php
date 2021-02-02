@@ -12,7 +12,7 @@ if(isset($_GET['logout'])){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Project List</title>
+    <title>Users List</title>
     <!-- library css -->     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -49,7 +49,7 @@ if(isset($_GET['logout'])){
             </div>
             <div class="col-10 bg-light">
                 <br>
-                <h3 class="titulo-tabla">Project List <a href="create_project.php" class="btn btn-success pull-right">Add New Project</a></h3>
+                <h3 class="titulo-tabla">Users List <a href="create_project.php" class="btn btn-success pull-right">Add New User</a></h3>
                 <hr class="bg-dark">
                     <?php
                         // Include config file
@@ -58,7 +58,7 @@ if(isset($_GET['logout'])){
                         // Attempt select query execution
                         $page = (isset($_GET['page'])) ? (int)$_GET['page'] : 1;
                         $offset = ($page -1)*10;
-                        $sql = "SELECT * FROM projects LIMIT 10 OFFSET $offset";
+                        $sql = "SELECT * FROM users LIMIT 10 OFFSET $offset";
                     ?>
                     <?php
                     if($result = mysqli_query($connection, $sql))

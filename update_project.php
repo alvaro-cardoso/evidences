@@ -13,7 +13,7 @@ require_once "config.php";
 
 // Define variables and initialize with empty values
 $title     = $description     = $status     = "";
-$title_err = $description_err = $status_err = "";
+$title_err = $description_err = "";
 
 // Processing form data when form is submitted
 if(isset($_POST["id"]) && !empty($_POST["id"]))
@@ -51,21 +51,8 @@ if(isset($_POST["id"]) && !empty($_POST["id"]))
        $description = $input_description;
    }
 
-   // Validate status
-   $input_status = trim($_POST["status"]);
-   if(empty($input_status))
-   {
-       $status_err = "Please enter the status.";     
-   } 
-   elseif(!filter_var($input_status, FILTER_VALIDATE_REGEXP, array("options"=>array("regexp"=>"/^[a-zA-Z\s]+$/"))))
-   {
-       $description_err = "Please enter a valid description.";
-   }
-   else
-   {
-       $status = $input_status;
-   }
-
+   $status = trim($_POST["status"]);
+   
    $log_date = date("Y-m-d H:i:s");
     
     // Check input errors before inserting in database
@@ -77,7 +64,7 @@ if(isset($_POST["id"]) && !empty($_POST["id"]))
         if($stmt = mysqli_prepare($connection, $sql))
         {
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "sssssi", $title, $description, $status, $log_date, $log_login, $param_id);
+            mysqli_stmt_bind_param($stmt, "ssissi", $title, $description, $status, $log_date, $log_login, $param_id);
             
             // Set parameters
             $title      = $title;
@@ -201,7 +188,7 @@ else
                     <ul class="dropdown-menu" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
                         <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="#"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
                     </ul>
                 </div>
             </div>
@@ -223,14 +210,13 @@ else
                             <input type="text" name="description" class="form-control" value="<?= $description; ?>">
                             <span class="help-block"><?= $description_err;?></span>
                         </div>
-                        <div class="form-group <?= (!empty($status_err)) ? 'has-error' : ''; ?>">
+                        <div class="form-group">
                             <label>Status</label>
                             <select id="status" name="status" class="form-control" value="<?= $status; ?>">
-                                <option value="In progress">In progress</option>
-                                <option value="In validation">In validation</option>
-                                <option value="Closed">Closed</option>
+                                <option value="1">In progress</option>
+                                <option value="2">In validation</option>
+                                <option value="3">Closed</option>
                             </select>
-                            <span class="help-block"><?= $status_err;?></span>
                         </div>
                         <input type="hidden" name="id" value="<?= $id; ?>"/>
                         <br>

@@ -27,7 +27,10 @@ if(isset($_POST['id']) && !empty($_POST['id']))
         if(mysqli_stmt_execute($stmt))
         {
             //  Records delete successfully. Redirect to landing page
-            header("location:evidences.php");
+            if(isset($_GET['project_id']))
+                header("location: evidences.php?project_id=" . $_GET['project_id']);
+            else
+                header("location: evidences.php");
             exit();
         }
         else
@@ -50,7 +53,6 @@ if(isset($_POST['id']) && !empty($_POST['id']))
             header("location:error.php");
             exit();
         }
-   
 }
 
 ?>
@@ -83,22 +85,33 @@ if(isset($_POST['id']) && !empty($_POST['id']))
                     <ul class="dropdown-menu" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
                         <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="#"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Delete Evidence
+                    Delete Evidence <?= $_GET['id']; ?>
                 </h3>
                 <hr class="bg-dark">
-                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-                        <input type="hidden" name="id" value="<?php echo trim($_GET["id"]); ?>"/>
+                <?php
+                    if(isset($_GET['project_id']))
+                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "?project_id=" . $_GET['project_id'] . "' method='post'>";
+                    else
+                        echo "<form action='" . htmlspecialchars($_SERVER['PHP_SELF']) . "' method='post'>";
+                ?>
+                        <input type="hidden" name="id" value="<?php echo trim($_GET["id"]); ?>">
+
                         <p>Are you sure you want to delete this evidence?</p>
                         <p>
                             <input type="submit" value="Yes" class="btn btn-danger">
-                            <a href="evidence.php" class="btn btn-success">No</a>
+                            <?php
+                                if(isset($_GET['project_id']))
+                                    echo "<a href='evidences.php?project_id=" . $_GET['project_id'] . "' class='btn btn-success'>No</a>";
+                                else
+                                    echo "<a href='evidences.php' class='btn btn-success'>No</a>";
+                            ?>
                         </p>
                 </form>
             </div>

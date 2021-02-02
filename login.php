@@ -7,23 +7,23 @@ $login = trim($_POST["login"]);
 $pass = trim($_POST["pass"]);
 }
 if(isset($login) and isset($pass)){
-  $sql = "SELECT * FROM user WHERE login=? AND password=?";
+  $password = md5($pass);
+  $sql = "SELECT * FROM users WHERE login=? AND password=?";
          
         if($stmt = mysqli_prepare($connection, $sql))
         {
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ss", $login, $pass);
-            
+            mysqli_stmt_bind_param($stmt, "ss", $login, $password);
             
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
               $stmt->store_result();
                if($stmt->num_rows > 0){
                 
-                $stmt->bind_result($user_id, $user_name, $user_tp);
+                $stmt->bind_result($user_id, $user_login, $user_pass, $user_name, $user_profile);
 
                 $_SESSION['login'] = $login;
-                $_SESSION['user_tp'] = $user_tp;
+                $_SESSION['user_profile'] = $user_profile;
                 $_SESSION['user_id'] = $user_id;
                 $_SESSION['user_name'] = $user_name;
                 $stmt->free_result();
@@ -37,10 +37,10 @@ if(isset($login) and isset($pass)){
             {
                 echo "Something went wrong. Please try again.";
             }
+            
         }
-         
-        // Close statement
-        mysqli_stmt_close($stmt);
+                // Close statement
+                mysqli_stmt_close($stmt);
     
     // Close connection
     mysqli_close($connection);
@@ -134,7 +134,7 @@ from {
           </div>
         <h2 class='text-center' style = 'margin: 0 0 25px'>Login</h2>   
         <div class='form-group has-error'>
-          <input type='text' class='form-control' name='login' placeholder='Enter Username' required> <br>
+          <input type='text' class='form-control' name='login' placeholder='Enter Login' required> <br>
         </div>
     <div class='form-group'>
             <input type='password' class='form-control' name='pass' placeholder='Enter Password' required> <br>
