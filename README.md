@@ -12,4 +12,4 @@ Gustavo Lima Lopes
 
 Lucas Gomes Ferraz
 
-Jonathan Hiroo Eguchi
+Jhonatan Hiroo Eguchi
