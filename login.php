@@ -2,12 +2,16 @@
 session_start();
 require_once "config.php";
 
+//Assign post values to the variables
 if(isset($_POST["login"])){
-$login = trim($_POST["login"]);
-$pass = trim($_POST["pass"]);
+  $login = trim($_POST["login"]);
+  $pass = trim($_POST["pass"]);
 }
+//Check login/pass
 if(isset($login) and isset($pass)){
+  //Password encryption
   $password = md5($pass);
+  //sql query
   $sql = "SELECT * FROM users WHERE login=? AND password=?";
          
         if($stmt = mysqli_prepare($connection, $sql))
@@ -18,10 +22,12 @@ if(isset($login) and isset($pass)){
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
               $stmt->store_result();
+              // Check if the query has valid results
                if($stmt->num_rows > 0){
                 
                 $stmt->bind_result($user_id, $user_login, $user_pass, $user_name, $user_profile);
-
+                $stmt->fetch();
+                // Set parameters
                 $_SESSION['login'] = $login;
                 $_SESSION['user_profile'] = $user_profile;
                 $_SESSION['user_id'] = $user_id;
@@ -53,6 +59,7 @@ else{
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
 <title>Login</title>
+<link rel='shortcut icon' href='GG_Management_Solutions_Icon.png'>
 <link rel='stylesheet' href='https://fonts.googleapis.com/icon?family=Material+Icons'>
 <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css'>
 <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css'> 
@@ -75,7 +82,7 @@ from {
 }
   body {
     color: #fff;
-    background: #1a6e50;
+    background: linear-gradient(to right,#1a6e50,#00DA5D);
   }
   .form-control {
     min-height: 41px;
@@ -99,7 +106,7 @@ from {
     color: #999999;
     border-radius: 3px;
       margin-bottom: 15px;
-        background: #404040;
+        background: #1C1C1C;
         box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
         padding: 30px;
     }
@@ -117,7 +124,6 @@ from {
     text-decoration: underline;
   }
   .login-form form a {
-    color: #1a6e50;
     text-decoration: none;
   }
   .material-icons {
@@ -130,9 +136,9 @@ from {
 <div class='login-form'>
     <form action='login.php' method='post'>
     <div class='ic'>
-          <a class='text-center'><span class='material-icons' aria-hidden='true'>account_circle</span></a>
+          <a class='text-center'><span class='material-icons text-light' aria-hidden='true'>account_circle</span></a>
           </div>
-        <h2 class='text-center' style = 'margin: 0 0 25px'>Login</h2>   
+        <h2 class='text-center text-light' style = 'margin: 0 0 25px'>Login</h2>   
         <div class='form-group has-error'>
           <input type='text' class='form-control' name='login' placeholder='Enter Login' required> <br>
         </div>
@@ -149,9 +155,9 @@ from {
 </body>
 </html>
   ";
+  //Login error
   if(isset($_GET["error"]) && !empty(trim($_GET["error"])))
     {
         echo "<script> alert('Invalid Username or Password ! Please try again.');</script>";
 }
 }
-?>

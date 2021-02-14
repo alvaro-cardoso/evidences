@@ -1,83 +1,58 @@
 <?php
-// Include checkin, config and authorization file
+// Include config, checkin and authorization file
 require_once "checkin.php";
-include_once 'config.php';
-require "auth_admin_dev.php";
-if (!isset($_GET['project_id']))
-    require "auth_admin.php";
+require_once "auth_admin.php";
+require_once "config.php";
 
-if (isset($_POST['id']) && !empty($_POST['id'])) {
-    // Prepare a delete statement
-    $sql = "DELETE FROM evidences WHERE id =?";
-    if ($stmt = mysqli_prepare($connection,  $sql)) {
-        mysqli_stmt_bind_param($stmt, "i", $param_id);
+// Processing form data when form is submitted
+if (isset($_POST["id"]) && !empty($_POST["id"])) {
+    $id = trim($_POST['id']);
 
-        // set parameters
-        $param_id = trim($_POST['id']);
+    $password = trim($_POST['password']);
+
+    // Prepare an update statement
+    $sql = "UPDATE users SET password=? WHERE id=?";
+
+    if ($stmt = mysqli_prepare($connection, $sql)) {
+        // Bind variables to the prepared statement as parameters
+        mysqli_stmt_bind_param($stmt, "si", md5($password), $id);
 
         // Attempt to execute the prepared statement
         if (mysqli_stmt_execute($stmt)) {
-            $evidence_page = trim($_POST["evidence_page"]);
-            //  Evidence deleted successfully. Redirect to landing page
-            if (isset($_POST['project_id'])) {
-                $project_id = trim($_POST["project_id"]);
-                $project_page = trim($_POST["project_page"]);
-                header("location: evidences.php?project_id=" . $project_id . "&project_page=" . $project_page . "&page=" . $evidence_page);
-            } else
-                header("location: evidences.php?page=" . $evidence_page);
+            // User's password changed successfully. Redirect to landing pstatus
+            header("location: update_user.php?id=" . $id ."&users_page=" . $_POST['users_page']);
             exit();
         } else {
-            header("location:error.php?number=4");
+            // Something went wrong. Redirect to error page
+            header("location: error.php?number=11");
             exit();
         }
     }
-    // close statement
+
+    // Close statement
     mysqli_stmt_close($stmt);
 
-    // close connection
+    // Close connection
     mysqli_close($connection);
 } else {
-    // Check existence of id parameter
-    if (empty(trim($_GET['id']))) {
+    // Check existence of id parameter before processing further
+    if (!isset($_GET["id"]) || empty(trim($_GET["id"])) || !isset($_GET["users_page"]) || empty(trim($_GET["users_page"]))) {
         // URL doesn't contain id parameter. Redirect to error page
-        header("location:error.php?number=6");
+        header("location: error.php");
         exit();
-    }
+    } else
+        // Get URL parameter
+        $id =  trim($_GET["id"]);
 }
 
-// Check existence of parameters in URL
-if (isset($_GET["project_id"])) {
-    if (!empty(trim($_GET["project_id"])) && !empty(trim($_GET["project_page"])) && isset($_GET["project_page"])) {
-        $project_id = trim($_GET['project_id']);
-        $project_page = trim($_GET['project_page']);
-    } else {
-        // URL doesn't contain valid id. Redirect to error page
-        header("location: error.php?number=6");
-        exit();
-    }
-}
-if (isset($_GET["project_page"])) {
-    if (!isset($_GET["project_id"])) {
-        // URL doesn't contain valid id. Redirect to error page
-        header("location: error.php?number=6");
-        exit();
-    }
-}
-if (isset($_GET["evidence_page"]) && !empty($_GET["evidence_page"]))
-    $evidence_page = $_GET["evidence_page"];
-else {
-    // URL doesn't contain valid id. Redirect to error page
-    header("location: error.php?number=6");
-    exit();
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Delete Evidence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Update User Password</title>
     <!-- library css -->
     <link rel='shortcut icon' href='GG_Management_Solutions_Icon.png'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
@@ -114,40 +89,30 @@ else {
                         <span class='material-icons float-start' style='font-size: 30px' aria-hidden='true'>account_circle</span>&nbsp;<?php echo $_SESSION['login'] ?></a>
                     <ul class="dropdown-menu bg-dark text-light" style="border:none !important; box-shadow: none;" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item bg-dark text-light" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>&nbsp;Projects</a></a></li>
-                        <?php if ($_SESSION['user_profile'] == 1) { ?>
+                        <?php if($_SESSION['user_profile'] == 1){ //Check if the user is a admin to show some dropdown options ?> 
                             <li><a class="dropdown-item bg-dark text-light" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>&nbsp;Evidences</a></a></li>
                             <li><a class="dropdown-item bg-dark text-light" href="users.php"><span class='material-icons float-start' aria-hidden='true'>folder_shared</span>&nbsp;Users</a></li>
                         <?php } ?>
-                        <li><a id="exit" class="dropdown-item bg-dark text-light" href="index.php?logout=1"><span class='material-icons float-start' aria-hidden='true'>power_settings_new</span>&nbsp;Logout</a></li>
+                        <li><a id ="exit" class="dropdown-item bg-dark text-light" href="index.php?logout=1"><span class='material-icons float-start' aria-hidden='true'>power_settings_new</span>&nbsp;Logout</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Delete Evidence <?= $_GET['id']; ?>
+                    Update User <?= $_GET['id'] ?> Password
                 </h3>
                 <hr class="bg-dark">
                 <form action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-                    <input type="hidden" name="id" value="<?php echo trim($_GET["id"]); ?>">
-                    <input type="hidden" name="evidence_page" value="<?= $evidence_page; ?>" />
-                    <?php
-                    if (isset($_GET['project_id'])) {
-                        echo "<input type='hidden' name='project_id' value=" . $project_id . " />";
-                        echo "<input type='hidden' name='project_page' value=" . $project_page . " />";
-                    }
-                    ?>
-
-                    <p>Are you sure you want to delete this evidence?</p>
-                    <p>
-                        <input type="submit" value="Yes" class="btn btn-danger">
-                        <?php
-                        if (isset($_GET['project_id']))
-                            echo "<a href='evidences.php?project_id=" . $project_id . "&project_page=" . $project_page . "&page=" . $evidence_page . "' class='btn btn-success'>No</a>";
-                        else
-                            echo "<a href='evidences.php?page=" . $evidence_page . "' class='btn btn-success'>No</a>";
-                        ?>
-                    </p>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="text" name="password" class="form-control" required>
+                    </div>
+                    <input type="hidden" name="id" value="<?= $id; ?>" />
+                    <input type="hidden" name="users_page" value="<?= $_GET['users_page'] ?>" />
+                    <br>
+                    <input type="submit" class="btn btn-success" value="Submit">
+                    <a href="update_user.php?id=<?= $_GET['id'] ?>&users_page=<?= $_GET['users_page'] ?>" class="btn btn-default" style="color:crimson">Cancel</a>
                 </form>
             </div>
         </div>
@@ -170,7 +135,6 @@ else {
 
     <!-- internal script -->
     <script src="javascript.js"></script>
-
 </body>
 
 </html>

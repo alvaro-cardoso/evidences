@@ -1,158 +1,158 @@
 <?php
+// Include config, checkin and authorization file
 require_once "checkin.php";
-if(isset($_GET['logout'])){
-    unset($_SESSION['login']);
-    session_destroy();
-    header('location:login.php');
-}
+require "auth_admin.php";
+require_once "config.php";
 ?>
 
 <?php
-// Include config file
-require_once "config.php";
-
 // Define variables and initialize with empty values
 $title     = $description     = $status     = "";
-$title_err = $description_err = "";
 
 // Processing form data when form is submitted
-if(isset($_POST["id"]) && !empty($_POST["id"]))
-{
+if (isset($_POST["id"]) && !empty($_POST["id"]) && isset($_POST["page"]) && !empty($_POST["page"])) {
     // Get hidden input value
     $id = $_POST["id"];
-    
-   // Validate title
-   $input_title = trim($_POST["title"]);
-   if(empty($input_title))
-   {
-       $title_err = "Please enter a title.";
-   }
-   elseif(!filter_var($input_title, FILTER_VALIDATE_REGEXP, array("options"=>array("regexp"=>"/^[a-zA-Z\s]+$/"))))
-   {
-       $title_err = "Please enter a valid title.";
-   }
-   else
-   {
-       $title = $input_title;
-   }
 
-   // Validate description
-   $input_description = trim($_POST["description"]);
-   if(empty($input_description))
-   {
-       $description_err = "Please enter a description.";
-   }
-   elseif(!filter_var($input_description, FILTER_VALIDATE_REGEXP, array("options"=>array("regexp"=>"/^[a-zA-Z\s]+$/"))))
-   {
-       $description_err = "Please enter a valid description.";
-   }
-   else
-   {
-       $description = $input_description;
-   }
+    $log_date = date("Y-m-d H:i:s");
 
-   $status = trim($_POST["status"]);
-   
-   $log_date = date("Y-m-d H:i:s");
-    
-    // Check input errors before inserting in database
-    if(empty($title_err) && empty($description_err) && empty($status_err))
-    {
-        // Prepare an update statement
-        $sql = "UPDATE projects SET title=?, description=?, status=?, log_date=?, log_login=? WHERE id=?";
+    // New values
 
-        if($stmt = mysqli_prepare($connection, $sql))
-        {
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ssissi", $title, $description, $status, $log_date, $log_login, $param_id);
-            
-            // Set parameters
-            $title      = $title;
-            $description   = $description;
-            $status        = $status;
-            $log_date   = $log_date;
-            $log_login     =$_SESSION['login'];
-            $param_id = $id;
-            // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt))
-            {
-                // Projects updated successfully. Redirect to landing page
-                header("location: index.php");
-                exit();
+    $title = trim($_POST["title"]);
+
+    $description = trim($_POST["description"]);
+
+    $status = trim($_POST["status"]);
+
+    // Old values
+
+    $oldtitle = trim($_POST["oldtitle"]);
+
+    $olddescription = trim($_POST["olddescription"]);
+
+    $oldstatus = trim($_POST["oldstatus"]);
+
+    // Prepare an update statement
+    $sql = "UPDATE projects SET title=?, description=?, status=?, log_date=?, log_login=? WHERE id=?";
+
+    if ($stmt = mysqli_prepare($connection, $sql)) {
+        // Bind variables to the prepared statement as parameters
+        mysqli_stmt_bind_param($stmt, "ssissi", $title, $description, $status, $log_date, $log_login, $param_id);
+
+        // Set parameters
+        $log_login     = $_SESSION['login'];
+        $param_id = $id;
+        // Attempt to execute the prepared statement
+        if (mysqli_stmt_execute($stmt)) {
+            $sql = "INSERT INTO logs (project_id,date,attribute,updates,login) VALUES (?,?,?,?,?)";
+            if ($stmt = mysqli_prepare($connection, $sql)) {
+                // Check title update
+                if ($title != $oldtitle) {
+                    $atribute = 'Name';
+                    $updates = "From \"{$oldtitle}\" to \"{$title}\"";
+                    mysqli_stmt_bind_param($stmt, "issss", $param_id, $log_date, $atribute, $updates, $log_login);
+                    if (!mysqli_stmt_execute($stmt))
+                        echo "Something went wrong. Please try again later.";
+                }
+                // Check description update
+                if ($description != $olddescription) {
+                    $atribute = 'Description';
+                    $updates = "From \"{$olddescription}\" to \"{$description}\"";
+                    mysqli_stmt_bind_param($stmt, "issss", $param_id, $log_date, $atribute, $updates, $log_login);
+                    if (!mysqli_stmt_execute($stmt))
+                        echo "Something went wrong. Please try again later.";
+                }
+                // Check status update
+                if ($status != $oldstatus) {
+                    $atribute = 'Status';
+                    switch ($oldstatus) {
+                        case 1:
+                            $oldstatus = 'In progress';
+                            break;
+                        case 2:
+                            $oldstatus = 'In validation';
+                            break;
+                        case 3:
+                            $oldstatus = 'Closed';
+                            break;
+                    }
+                    switch ($status) {
+                        case 1:
+                            $status = 'In progress';
+                            break;
+                        case 2:
+                            $status = 'In validation';
+                            break;
+                        case 3:
+                            $status = 'Closed';
+                            break;
+                    }
+                    //Update query
+                    $updates = "From \"{$oldstatus}\" to \"{$status}\"";
+                    mysqli_stmt_bind_param($stmt, "issss", $param_id, $log_date, $atribute, $updates, $log_login);
+                    if (!mysqli_stmt_execute($stmt))
+                        echo "Something went wrong. Please try again later.";
+                }
             }
-            else
-            {
-                echo "Something went wrong. Please try again later.";
-            }
-        }
-         
-        // Close statement
-        mysqli_stmt_close($stmt);
+            // Project updated and log archived successfully. Redirect to landing page
+            header("location: index.php?page=" . $_POST['page']);
+            exit();
+        } else
+            echo "Something went wrong. Please try again later.";
     }
-    
+
+    // Close statement
+    mysqli_stmt_close($stmt);
+
     // Close connection
     mysqli_close($connection);
-}
-else
-{
+} else {
     // Check existence of id parameter before processing further
-    if(isset($_GET["id"]) && !empty(trim($_GET["id"])))
-    {
+    if (isset($_GET["id"]) && !empty(trim($_GET["id"])) && isset($_GET["project_page"]) && !empty(trim($_GET["project_page"]))) {
         // Get URL parameter
         $id =  trim($_GET["id"]);
-        
+        $page = trim($_GET["project_page"]);
+
         // Prepare a select statement
         $sql = "SELECT * FROM projects WHERE id = ?";
-        if($stmt = mysqli_prepare($connection, $sql))
-        {
+        if ($stmt = mysqli_prepare($connection, $sql)) {
             // Bind variables to the prepared statement as parameters
             mysqli_stmt_bind_param($stmt, "i", $param_id);
-            
+
             // Set parameters
             $param_id = $id;
-            
+
             // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt))
-            {
+            if (mysqli_stmt_execute($stmt)) {
                 $result = mysqli_stmt_get_result($stmt);
-    
-                if(mysqli_num_rows($result) == 1)
-                {
+
+                if (mysqli_num_rows($result) == 1) {
                     /* Fetch result row as an associative array. Since the result set
                     contains only one row, we don't need to use while loop */
                     $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
-                    
+
                     // Retrieve individual field value
-                    $title       = $row["title"];
-                    $description   = $row["description"];
-                    $status     = $row["status"];
+                    $oldtitle       = $row["title"];
+                    $olddescription   = $row["description"];
+                    $oldstatus     = $row["status"];
                     $log_date       = $row["log_date"];
                     $login = $row["log_login"];
-
-                }
-                else
-                {
-                    // URL doesn't contain valid id. Redirect to error page
-                    header("location: error.php");
-                    exit();
-                }
+                } 
             }
-            else
-            {
-                echo "Oops! Something went wrong. Please try again later.";
+            else {
+                header("location: error.php?number=10");
+                exit();
             }
         }
-        
+
         // Close statement
         mysqli_stmt_close($stmt);
-        
+
         // Close connection
         mysqli_close($connection);
-    }
-    else
-    {
+    } else {
         // URL doesn't contain id parameter. Redirect to error page
-        header("location: error.php");
+        header("location: error.php?number=6");
         exit();
     }
 }
@@ -160,35 +160,52 @@ else
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Update Record</title>
+    <title>Update Project</title>
     <!-- library css -->
+    <link rel='shortcut icon' href='GG_Management_Solutions_Icon.png'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css">
+    <style>
+        a {
+            text-decoration: none !important;
+            border: none !important;
+        }
+
+        .dropdown-menu>li>a:hover {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        #exit:hover {
+            background-color: crimson !important;
+            opacity: 0.8;
+        }
+
+        .dropdown>a:hover {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container-fluid min-vh-100 d-flex flex-column">
-        <div class="row text-light" style="background: #1a6e50">
-            <div class="col-12">
-                <br>
-                <span class="badge bg-dark fs-5 pull-right">Logged as: <?php echo $_SESSION['login']?> <a href="index.php?logout=1" class="btn btn-danger"> Logout</a></span><br><br><br>
-            </div>
-        </div>
         <div class="row flex-grow-1">
-            <div class="col bg-dark text-light" style="border-right:solid #1a6e50; border-right-width:10px">
-            <br>
+            <div class="col bg-dark text-light" style="border-right:solid #24242c; border-right-width:10px">
+                <br>
                 <div class="dropdown">
-                    <a class="btn text-light dropdown-toggle" style="background:#1a6e50" href="#" role="button" id="dropdownList" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class='material-icons float-start' aria-hidden='true'>view_list</span> Lists
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownList">
-                        <li><a class="dropdown-item" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>Projects</a></a></li>
-                        <li><a class="dropdown-item" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>Evidences</a></a></li>
-                        <li><a class="dropdown-item" href="users.php"><span class='material-icons float-start' aria-hidden='true'>account_circle</span>Users</a></li>
+                    <a class="btn bg-dark text-light dropdown" role="button" id="dropdownList" text-center style="font-size: 22px" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class='material-icons float-start' style='font-size: 30px' aria-hidden='true'>account_circle</span>&nbsp;<?php echo $_SESSION['login'] ?></a>
+                    <ul class="dropdown-menu bg-dark text-light" style="border:none !important; box-shadow: none;" aria-labelledby="dropdownList">
+                        <li><a class="dropdown-item bg-dark text-light" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>&nbsp;Projects</a></a></li>
+                        <?php if ($_SESSION['user_profile'] == 1) { // Options only available to admins ?>
+                            <li><a class="dropdown-item bg-dark text-light" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>&nbsp;Evidences</a></a></li>
+                            <li><a class="dropdown-item bg-dark text-light" href="users.php"><span class='material-icons float-start' aria-hidden='true'>folder_shared</span>&nbsp;Users</a></li>
+                        <?php } ?>
+                        <li><a id="exit" class="dropdown-item bg-dark text-light" href="index.php?logout=1"><span class='material-icons float-start' aria-hidden='true'>power_settings_new</span>&nbsp;Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -199,30 +216,32 @@ else
                 </h3>
                 <hr class="bg-dark">
                 <p>Please fill this form and submit to update the project on the database.</p>
-                    <form action="<?= htmlspecialchars(basename($_SERVER['REQUEST_URI'])); ?>" method="post">
-                        <div class="form-group <?= (!empty($title_err)) ? 'has-error' : ''; ?>">
-                            <label>Title</label>
-                            <input type="text" name="title" class="form-control" value="<?= $title; ?>">
-                            <span class="help-block"><?= $title_err;?></span>
-                        </div>
-                        <div class="form-group <?= (!empty($description_err)) ? 'has-error' : ''; ?>">
-                            <label>Description</label>
-                            <input type="text" name="description" class="form-control" value="<?= $description; ?>">
-                            <span class="help-block"><?= $description_err;?></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select id="status" name="status" class="form-control" value="<?= $status; ?>">
-                                <option value="1">In progress</option>
-                                <option value="2">In validation</option>
-                                <option value="3">Closed</option>
-                            </select>
-                        </div>
-                        <input type="hidden" name="id" value="<?= $id; ?>"/>
-                        <br>
-                        <input type="submit" class="btn btn-success" value="Submit">
-                        <a href="index.php" class="btn btn-danger">Cancel</a>
-                    </form>
+                <form action="<?= htmlspecialchars(basename($_SERVER['REQUEST_URI'])); ?>" method="post">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" name="title" class="form-control" value="<?= $oldtitle; ?>" required>
+                    </div>
+                    <input type="hidden" name="oldtitle" value="<?= $oldtitle; ?>" />
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" name="description" class="form-control" value="<?= $olddescription; ?>" required>
+                    </div>
+                    <input type="hidden" name="olddescription" value="<?= $olddescription; ?>" />
+                    <div class="form-group">
+                        <label>Status<div class="text-danger">(Note: If Closed is selected, no more evidences can be created or updated in this project)</div></label>
+                        <select id="status" name="status" class="form-control">
+                            <option value="1" <?php if ($oldstatus == 1) echo "selected"; ?>>In progress</option>
+                            <option value="2" <?php if ($oldstatus == 2) echo "selected"; ?>>In validation</option>
+                            <option value="3" <?php if ($oldstatus == 3) echo "selected"; ?>>Closed</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="oldstatus" value="<?= $oldstatus; ?>" />
+                    <input type="hidden" name="id" value="<?= $id; ?>" />
+                    <input type="hidden" name="page" value="<?= $page; ?>" />
+                    <br>
+                    <input type="submit" class="btn btn-success" value="Submit">
+                    <a href="index.php?page=<?= $page ?>" class="btn btn-danger">Cancel</a>
+                </form>
             </div>
         </div>
     </div>
@@ -240,10 +259,10 @@ else
     <script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.print.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.colVis.min.js"></script>
-        
-       
-    <!-- internal script -->
-    <script src="js/export.js"></script>
-</body>
-</html>
 
+
+    <!-- internal script -->
+    <script src="javascript.js"></script>
+</body>
+
+</html>

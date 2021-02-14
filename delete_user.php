@@ -3,11 +3,12 @@
 require_once "checkin.php";
 require "auth_admin.php";
 include_once 'config.php';
+?>
 
-// Processing form data when form is submitted
-if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !empty($_POST['page'])) {
+<?php
+if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['users_page']) && !empty($_POST['users_page'])) {
     // Prepare a delete statement
-    $sql = "DELETE FROM projects WHERE id =?";
+    $sql = "DELETE FROM users WHERE id =?";
     if ($stmt = mysqli_prepare($connection,  $sql)) {
         mysqli_stmt_bind_param($stmt, "i", $param_id);
 
@@ -16,13 +17,12 @@ if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !emp
 
         // Attempt to execute the prepared statement
         if (mysqli_stmt_execute($stmt)) {
-            //  Project deleted successfully. Redirect to landing page
-            $page = trim($_POST['page']);
-            header("location:index.php?page=" .$page);
+            //  User deleted successfully. Redirect to landing page
+            header("location:users.php?page=" . $_POST['users_page']);
             exit();
         } else {
-            header("location:error.php?number=10");
-            exit();
+            header("location:error.php?number=11");
+        exit();
         }
     }
     // close statement
@@ -32,7 +32,7 @@ if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !emp
     mysqli_close($connection);
 } else {
     // Check existence of id parameter
-    if (!isset($_GET["id"]) || empty(trim($_GET["id"])) || !isset($_GET["project_page"]) || empty(trim($_GET["project_page"]))) {
+    if (!isset($_GET["id"]) || empty(trim($_GET["id"])) || !isset($_GET["users_page"]) || empty(trim($_GET["users_page"]))) {
         // URL doesn't contain id parameter. Redirect to error page
         header("location:error.php?number=6");
         exit();
@@ -46,7 +46,7 @@ if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !emp
 
 <head>
     <meta charset="UTF-8">
-    <title>Delete Project</title>
+    <title>Delete User</title>
     <!-- library css -->
     <link rel='shortcut icon' href='GG_Management_Solutions_Icon.png'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
@@ -94,16 +94,16 @@ if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !emp
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Delete Project
+                    Delete User
                 </h3>
                 <hr class="bg-dark">
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
                     <input type="hidden" name="id" value="<?php echo trim($_GET["id"]); ?>" />
-                    <input type="hidden" name="page" value="<?php echo trim($_GET["project_page"]); ?>" />
-                    <p>Are you sure you want to delete this project?</p>
+                    <input type="hidden" name="users_page" value="<?php echo trim($_GET["users_page"]); ?>" />
+                    <p>Are you sure you want to delete this user?</p>
                     <p>
                         <input type="submit" value="Yes" class="btn btn-danger">
-                        <a href="index.php?page=<?= $_GET["project_page"] ?>" class="btn btn-success">No</a>
+                        <a href="users.php?page=<?=$_GET["users_page"]?>" class="btn btn-success">No</a>
                     </p>
                 </form>
             </div>
@@ -126,6 +126,7 @@ if (isset($_POST['id']) && !empty($_POST['id']) && isset($_POST['page']) && !emp
 
         <!-- internal script -->
         <script src="javascript.js"></script>
+
 </body>
 
 </html>

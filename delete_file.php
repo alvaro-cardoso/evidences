@@ -1,33 +1,35 @@
 <?php
 // Include checkin, config and authorization file
 require_once "checkin.php";
-include_once 'config.php';
 require "auth_admin_dev.php";
-if (!isset($_GET['project_id']))
+include_once 'config.php';
+if(!isset($_GET['project_id']))
     require "auth_admin.php";
 
+// Processing form data when form is submitted
 if (isset($_POST['id']) && !empty($_POST['id'])) {
-    // Prepare a delete statement
-    $sql = "DELETE FROM evidences WHERE id =?";
-    if ($stmt = mysqli_prepare($connection,  $sql)) {
-        mysqli_stmt_bind_param($stmt, "i", $param_id);
+    $file_id = $_POST['id'];
 
-        // set parameters
-        $param_id = trim($_POST['id']);
+    // Prepare a delete statement
+    $sql = "DELETE FROM files WHERE id =?";
+    if ($stmt = mysqli_prepare($connection,  $sql)) {
+        mysqli_stmt_bind_param($stmt, "i", $file_id);
 
         // Attempt to execute the prepared statement
         if (mysqli_stmt_execute($stmt)) {
+            $evidence_id = trim($_POST["evidence_id"]);
             $evidence_page = trim($_POST["evidence_page"]);
-            //  Evidence deleted successfully. Redirect to landing page
-            if (isset($_POST['project_id'])) {
+            //  File deleted successfully. Redirect to landing page
+            if (isset($_POST['project_id'])){
                 $project_id = trim($_POST["project_id"]);
                 $project_page = trim($_POST["project_page"]);
-                header("location: evidences.php?project_id=" . $project_id . "&project_page=" . $project_page . "&page=" . $evidence_page);
-            } else
-                header("location: evidences.php?page=" . $evidence_page);
+                header("location: files_evidence.php?evidence_id=" . $evidence_id . "&project_id=" . $project_id . "&project_page=" . $project_page . "&evidence_page=" . $evidence_page);
+            }
+            else
+                header("location: files_evidence.php?evidence_id=" . $evidence_id . "&evidence_page=" . $evidence_page);
             exit();
         } else {
-            header("location:error.php?number=4");
+            header("location:error.php?number=8");
             exit();
         }
     }
@@ -38,10 +40,13 @@ if (isset($_POST['id']) && !empty($_POST['id'])) {
     mysqli_close($connection);
 } else {
     // Check existence of id parameter
-    if (empty(trim($_GET['id']))) {
+    if (empty(trim($_GET['id'])) || !isset($_GET['id'])) {
         // URL doesn't contain id parameter. Redirect to error page
         header("location:error.php?number=6");
         exit();
+    }
+    else{
+        $file_id = $_GET['id'];
     }
 }
 
@@ -56,8 +61,8 @@ if (isset($_GET["project_id"])) {
         exit();
     }
 }
-if (isset($_GET["project_page"])) {
-    if (!isset($_GET["project_id"])) {
+if (isset($_GET["project_page"])){
+    if(!isset($_GET["project_id"])){
         // URL doesn't contain valid id. Redirect to error page
         header("location: error.php?number=6");
         exit();
@@ -65,6 +70,14 @@ if (isset($_GET["project_page"])) {
 }
 if (isset($_GET["evidence_page"]) && !empty($_GET["evidence_page"]))
     $evidence_page = $_GET["evidence_page"];
+else{
+    // URL doesn't contain valid id. Redirect to error page
+    header("location: error.php?number=6");
+    exit();
+}
+
+if (isset($_GET["evidence_id"]) && !empty($_GET["evidence_id"]))
+    $evidence_id = $_GET["evidence_id"];
 else {
     // URL doesn't contain valid id. Redirect to error page
     header("location: error.php?number=6");
@@ -114,40 +127,41 @@ else {
                         <span class='material-icons float-start' style='font-size: 30px' aria-hidden='true'>account_circle</span>&nbsp;<?php echo $_SESSION['login'] ?></a>
                     <ul class="dropdown-menu bg-dark text-light" style="border:none !important; box-shadow: none;" aria-labelledby="dropdownList">
                         <li><a class="dropdown-item bg-dark text-light" href="index.php"><span class='material-icons float-start' aria-hidden='true'>assignment</span>&nbsp;Projects</a></a></li>
-                        <?php if ($_SESSION['user_profile'] == 1) { ?>
+                        <?php if($_SESSION['user_profile'] == 1){ ?>
                             <li><a class="dropdown-item bg-dark text-light" href="evidences.php"><span class='material-icons float-start' aria-hidden='true'>folder</span>&nbsp;Evidences</a></a></li>
                             <li><a class="dropdown-item bg-dark text-light" href="users.php"><span class='material-icons float-start' aria-hidden='true'>folder_shared</span>&nbsp;Users</a></li>
                         <?php } ?>
-                        <li><a id="exit" class="dropdown-item bg-dark text-light" href="index.php?logout=1"><span class='material-icons float-start' aria-hidden='true'>power_settings_new</span>&nbsp;Logout</a></li>
+                        <li><a id ="exit" class="dropdown-item bg-dark text-light" href="index.php?logout=1"><span class='material-icons float-start' aria-hidden='true'>power_settings_new</span>&nbsp;Logout</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-10 bg-light">
                 <br>
                 <h3 class="titulo-tabla">
-                    Delete Evidence <?= $_GET['id']; ?>
+                    Delete File <?= $_GET['id']; ?>
                 </h3>
                 <hr class="bg-dark">
                 <form action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-                    <input type="hidden" name="id" value="<?php echo trim($_GET["id"]); ?>">
-                    <input type="hidden" name="evidence_page" value="<?= $evidence_page; ?>" />
-                    <?php
-                    if (isset($_GET['project_id'])) {
+                <input type="hidden" name="id" value="<?= $file_id ?>">
+                <input type="hidden" name="evidence_id" value="<?= $evidence_id; ?>" />
+                <input type="hidden" name="evidence_page" value="<?= $evidence_page; ?>" />
+                <?php
+                    if(isset($_GET['project_id'])){
                         echo "<input type='hidden' name='project_id' value=" . $project_id . " />";
                         echo "<input type='hidden' name='project_page' value=" . $project_page . " />";
                     }
-                    ?>
+                ?>
 
-                    <p>Are you sure you want to delete this evidence?</p>
-                    <p>
-                        <input type="submit" value="Yes" class="btn btn-danger">
-                        <?php
-                        if (isset($_GET['project_id']))
-                            echo "<a href='evidences.php?project_id=" . $project_id . "&project_page=" . $project_page . "&page=" . $evidence_page . "' class='btn btn-success'>No</a>";
-                        else
-                            echo "<a href='evidences.php?page=" . $evidence_page . "' class='btn btn-success'>No</a>";
-                        ?>
-                    </p>
+                <p>Are you sure you want to delete this file?</p>
+                <p>
+                    <input type="submit" value="Yes" class="btn btn-danger">
+                    <?php
+                    if (isset($_GET['project_id']))
+                        echo "<a href='files_evidence.php?evidence_id=" . $evidence_id . "&project_id=" . $project_id . "&project_page=" . $project_page . "&evidence_page=" . $evidence_page . "' class='btn btn-success'>No</a>";
+                    else
+                        echo "<a href='files_evidence.php?evidence_id=" . $evidence_id . "&evidence_page=" . $evidence_page . "' class='btn btn-success'>No</a>";
+                    ?>
+                </p>
                 </form>
             </div>
         </div>
